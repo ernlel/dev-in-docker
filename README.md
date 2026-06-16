@@ -19,7 +19,7 @@ docker compose logs -f
 
 | Service | URL | Credentials |
 |---------|-----|-------------|
-| code-server | http://localhost:8443 | username, password: set in .env|
+| code-server | http://localhost:8443 | password: set in .env|
 | AionUI Web | http://localhost:3000 | username: admin, password set in .env|
 
 ## What's inside
