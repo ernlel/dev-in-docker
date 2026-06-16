@@ -52,6 +52,10 @@ MISE_CONFIG="${DEV_HOME}/.config/mise"
 export MISE_DATA_DIR="$MISE_DATA"
 export MISE_CONFIG_DIR="$MISE_CONFIG"
 
+# Ensure mise data dir is writable before install (handles stale root-owned dirs)
+mkdir -p "$MISE_DATA"
+chown -R "$HOST_UID:$HOST_GID" "${DEV_HOME}/.local" 2>/dev/null || true
+
 if command -v mise &>/dev/null; then
     MISE_BIN="$(command -v mise)"
 else
