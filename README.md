@@ -194,22 +194,18 @@ docker compose up -d
 
 Packages are installed via `brew install` into `~/.linuxbrew/` (persistent in your mounted home). To add or remove packages, edit `BREW_PACKAGES` and restart.
 
-Common CLI agent formulae:
+Common CLI agent formulae (Linux-compatible):
 
-| Formula name                | CLI command    | Install via            | AionUI |
-|-----------------------------|----------------|------------------------|--------|
-| `opencode`                  | `opencode`     | `brew install opencode` | ✓     |
-| `pi-coding-agent`           | `pi`           | `brew install pi-coding-agent` | ✗ |
-| `kilo`                      | `kilo`         | `brew install kilo`     | ✗      |
-| `gemini-cli`                | `gemini`       | `brew install gemini-cli` | ✓   |
-| `block-goose-cli`           | `goose`        | `brew install block-goose-cli` | ✓ |
-| `qwen-code`                 | `qwen`         | `brew install qwen-code` | ✓    |
-| `Tencent-CodeBuddy/tap/codebuddy-code` | `codebuddy` | `brew install Tencent-CodeBuddy/tap/codebuddy-code` | ✓ |
-| `kimi-cli`                  | `kimi`         | `brew install kimi-cli` | ✓      |
-| `kiro-cli`                  | `kiro-cli`     | `brew install kiro-cli` | ✗      |
-| `claude-code`               | `claude`       | `brew install claude-code` | ✓ (cask) |
-| `copilot-cli`               | `copilot`      | `brew install copilot-cli` | ✓ (cask) |
+| Formula name      | CLI command    | Install via                           | AionUI |
+|-------------------|----------------|---------------------------------------|--------|
+| `opencode`        | `opencode`     | `brew install opencode`               | ✓     |
+| `pi-coding-agent` | `pi`           | `brew install pi-coding-agent`        | ✗      |
+| `kilo`            | `kilo`         | `brew install kilo`                   | ✗      |
+| `gemini-cli`      | `gemini`       | `brew install gemini-cli`             | ✓      |
+| `block-goose-cli` | `goose`        | `brew install block-goose-cli`        | ✓      |
+| `qwen-code`       | `qwen`         | `brew install qwen-code`              | ✓      |
+| `kimi-cli`        | `kimi`         | `brew install kimi-cli`               | ✓      |
 
-Packages marked (cask) are macOS-only GUI/formulae and will be skipped on Linux. All others install on any platform.
+macOS-only casks (not available on Linux): `kiro-cli`, `copilot-cli`, `claude-code`.
 
 You can set `BREW_PACKAGES` to any brew formula name — it is not limited to coding agents.
