@@ -66,7 +66,7 @@ services:
       # Pre-install mise-managed tools on first run
       MISE_DEFAULT_TOOLS: "${MISE_DEFAULT_TOOLS:-nodejs@22}"
 
-      # Homebrew packages to install at runtime (comma-separated: opencode,pi-coding-agent,gemini-cli)
+      # Homebrew packages to install at runtime (comma-separated: opencode,pi-coding-agent,hermes-agent)
       BREW_PACKAGES: "${BREW_PACKAGES:-}"
 
       # UID/GID fallback

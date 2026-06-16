@@ -183,7 +183,7 @@ Installed at build time. Tools defined in `MISE_DEFAULT_TOOLS` are installed aut
 [Homebrew](https://brew.sh/) is installed at build time and set up in your persistent home at runtime. Set `BREW_PACKAGES` in `.env` to install any Homebrew formulae when the container starts:
 
 ```env
-BREW_PACKAGES=opencode,pi-coding-agent,gemini-cli,kimi-cli,kiro-cli
+BREW_PACKAGES=opencode,pi-coding-agent,Kilo-Org/tap/kilo,gemini-cli,kimi-cli,nanobot,hermes-agent,mistral-vibe
 ```
 
 Then start (or restart):
@@ -192,20 +192,28 @@ Then start (or restart):
 docker compose up -d
 ```
 
-Packages are installed via `brew install` into `~/.linuxbrew/` (persistent in your mounted home). To add or remove packages, edit `BREW_PACKAGES` and restart.
+Packages are installed via `brew install` (formula first, cask fallback) into `~/.linuxbrew/` (persistent in your mounted home). To add or remove packages, edit `BREW_PACKAGES` and restart.
 
-Common CLI agent formulae (Linux-compatible):
+Common CLI agent packages:
 
-| Formula name      | CLI command    | Install via                           | AionUI |
-|-------------------|----------------|---------------------------------------|--------|
-| `opencode`        | `opencode`     | `brew install opencode`               | ✓     |
-| `pi-coding-agent` | `pi`           | `brew install pi-coding-agent`        | ✗      |
-| `kilo`            | `kilo`         | `brew install kilo`                   | ✗      |
-| `gemini-cli`      | `gemini`       | `brew install gemini-cli`             | ✓      |
-| `block-goose-cli` | `goose`        | `brew install block-goose-cli`        | ✓      |
-| `qwen-code`       | `qwen`         | `brew install qwen-code`              | ✓      |
-| `kimi-cli`        | `kimi`         | `brew install kimi-cli`               | ✓      |
-
-macOS-only casks (not available on Linux): `kiro-cli`, `copilot-cli`, `claude-code`.
+| Package name      | CLI command    | Install via                              | AionUI |
+|-------------------|----------------|------------------------------------------|--------|
+| `opencode`        | `opencode`     | `brew install opencode`                  | ✓     |
+| `pi-coding-agent` | `pi`           | `brew install pi-coding-agent`           | ✗      |
+| `kilo`            | `kilo`         | `brew install Kilo-Org/tap/kilo`         | ✗      |
+| `gemini-cli`      | `gemini`       | `brew install gemini-cli`                | ✓      |
+| `block-goose-cli` | `goose`        | `brew install block-goose-cli`           | ✓      |
+| `qwen-code`       | `qwen`         | `brew install qwen-code`                 | ✓      |
+| `kimi-cli`        | `kimi`         | `brew install kimi-cli`                  | ✓      |
+| `nanobot`         | `nanobot`      | `brew install nanobot`                   | ✗      |
+| `hermes-agent`    | `hermes`       | `brew install hermes-agent`              | ✗      |
+| `mistral-vibe`    | `mistral-vibe` | `brew install mistral-vibe`              | ✗      |
+| `claude-code`     | `claude`       | `brew install --cask claude-code`        | ✗      |
+| `copilot-cli`     | `copilot`      | `brew install --cask copilot-cli`        | ✗      |
+| `factory`         | `factory`      | `brew install --cask factory`            | ✗      |
+| `cursor-cli`      | `cursor`       | `brew install --cask cursor-cli`         | ✗      |
+| `openclaw`        | `openclaw`     | `brew install --cask openclaw`           | ✗      |
+| `codex`           | `codex`        | `brew install --cask codex`              | ✗      |
+| `grok-build`      | `grok`         | `brew install --cask grok-build`         | ✗      |
 
 You can set `BREW_PACKAGES` to any brew formula name — it is not limited to coding agents.

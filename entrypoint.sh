@@ -92,7 +92,13 @@ fi
 if [ -n "${BREW_PACKAGES:-}" ]; then
     echo ">>> Installing Homebrew packages …"
     for pkg in $(echo "$BREW_PACKAGES" | tr ',' ' '); do
-        sudo -u "$RUN_USER" "$BREW_HOME/bin/brew" install "$pkg" || true
+        if sudo -u "$RUN_USER" "$BREW_HOME/bin/brew" install "$pkg" &>/dev/null; then
+            echo "  ✓ $pkg"
+        elif sudo -u "$RUN_USER" "$BREW_HOME/bin/brew" install --cask "$pkg" &>/dev/null; then
+            echo "  ✓ $pkg (cask)"
+        else
+            echo "  ⚠ $pkg — failed to install"
+        fi
     done
 fi
 
