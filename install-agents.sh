@@ -27,7 +27,8 @@ mistral-vibe) curl -LsSf https://mistral.ai/vibe/install.sh | bash || true ;;
 snow)       npm install -g snow-ai || true ;;
 hermes)     curl -fsSL https://hermes-agent.nousresearch.com/install.sh | bash || true ;;
 cursor-agent) npm install -g @cursor/cli || true ;;
-kiro)       curl -fsSL https://cli.kiro.dev/install | bash || true
+kiro)       rm -f "$HOME/.local/bin/kiro-cli" "$HOME/.local/bin/kiro-cli-chat" "$HOME/.local/bin/kiro-cli-term" 2>/dev/null || true
+            curl -fsSL https://cli.kiro.dev/install | bash || true
             if [ -f "$HOME/.local/bin/kiro-cli" ] && [ ! -f "$HOME/.local/bin/kiro" ]; then
                 ln -sf kiro-cli "$HOME/.local/bin/kiro"
             fi ;;
