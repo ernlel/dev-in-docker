@@ -69,6 +69,13 @@ fi
 export PATH="$PATH:${DEV_HOME}/.local/bin"
 eval "$("$MISE_BIN" activate bash 2>/dev/null)" || true
 
+# Persist PATH for `docker compose exec` shells
+cat > /etc/profile.d/mise.sh <<-PROFILE
+export MISE_DATA_DIR="$MISE_DATA"
+export MISE_CONFIG_DIR="$MISE_CONFIG"
+export PATH="\$PATH:${DEV_HOME}/.local/share/mise/shims:${DEV_HOME}/.local/bin"
+PROFILE
+
 if [ -n "${MISE_DEFAULT_TOOLS:-}" ]; then
     echo ">>> Installing mise default tools: $MISE_DEFAULT_TOOLS"
     # shellcheck disable=SC2086
