@@ -145,9 +145,9 @@ docker compose restart dev
 ## File layout
 
 ```
-├── Dockerfile         # Multi-stage: builds AionUI + dev tools + agents
+├── Dockerfile         # Multi-stage: builds AionUI + dev tools + Homebrew
 ├── docker-compose.yml # Service definition + build args
-├── entrypoint.sh      # UID matching, mise, code-server + AionUI launch
+├── entrypoint.sh      # UID matching, mise, Homebrew, code-server + AionUI launch
 ├── .env               # All configurable versions and settings
 └── README.md
 ```
@@ -178,50 +178,38 @@ Both run in the same container. Data persists at `~/.aionui-web/` on the host.
 
 Installed at build time. Tools defined in `MISE_DEFAULT_TOOLS` are installed automatically on first run. All mise data persists at `~/.local/share/mise/` on the host.
 
-### CLI agents
+### Homebrew packages
 
-AionUI auto-detects CLI coding agents on PATH. Set `AIONUI_CLI_AGENTS` in `.env` before **building** to bake agents into the image:
+[Homebrew](https://brew.sh/) is installed at build time and set up in your persistent home at runtime. Set `BREW_PACKAGES` in `.env` to install any Homebrew formulae when the container starts:
 
 ```env
-AIONUI_CLI_AGENTS=claude,codex,copilot,opencode
+BREW_PACKAGES=opencode,pi-coding-agent,gemini-cli,kimi-cli,kiro-cli
 ```
 
-Then rebuild:
+Then start (or restart):
 
 ```bash
-docker compose build --no-cache && docker compose up -d
+docker compose up -d
 ```
 
-Agents install at build time in the `aionui-builder` stage — the resulting binaries land in `/usr/local/bin/` and are copied to the final image. This avoids download overhead and interactive prompts at container start.
+Packages are installed via `brew install` into `~/.linuxbrew/` (persistent in your mounted home). To add or remove packages, edit `BREW_PACKAGES` and restart.
 
-Supported agent names:
+Common CLI agent formulae:
 
-| Agent name      | CLI command    | Install method                                                               | AionUI |
-|-----------------|----------------|------------------------------------------------------------------------------|--------|
-| `claude`        | `claude`       | `npm install -g @anthropic-ai/claude-code`                                   | ✓      |
-| `codex`         | `codex`        | `npm install -g @openai/codex`                                               | ✓      |
-| `copilot`       | `copilot`      | `npm install -g @github/copilot`                                             | ✓      |
-| `opencode`      | `opencode`     | `npm install -g opencode-ai`                                                 | ✓      |
-| `goose`         | `goose`        | Direct binary download from GitHub releases                                  | ✓      |
-| `gemini`        | `gemini`       | `npm install -g @google/gemini-cli`                                          | ✓      |
-| `qwen`          | `qwen`         | `curl -fsSL https://qwen-code-assets.oss-cn-hangzhou.aliyuncs.com/installation/install-qwen.sh \| bash` | ✓ |
-| `augment`       | `auggie`       | `npm install -g @augmentcode/auggie`                                         | ✓      |
-| `codebuddy`     | `codebuddy`    | `npm install -g @tencent-ai/codebuddy-code`                                  | ✓      |
-| `kimi`          | `kimi`         | `curl -fsSL https://code.kimi.com/kimi-code/install.sh \| bash`               | ✓      |
-| `factory`       | `droid`        | `curl -fsSL https://app.factory.ai/cli \| sh`                                 | ✓      |
-| `qoder`         | `qoder`        | `curl -fsSL https://qoder.com/install \| bash`                                | ✓      |
-| `mistral-vibe`  | `vibe-acp`     | `curl -LsSf https://mistral.ai/vibe/install.sh \| bash`                        | ✓      |
-| `snow`          | `snow`         | `npm install -g snow-ai`                                                     | ✓      |
-| `hermes`        | `hermes`       | `curl -fsSL https://hermes-agent.nousresearch.com/install.sh \| bash`          | ✓      |
-| `cursor-agent`  | `cursor-agent` | `npm install -g @cursor/cli`                                                 | ✓      |
-| `kiro`          | `kiro`         | `curl -fsSL https://cli.kiro.dev/install \| bash`                             | ✓      |
-| `openclaw`      | `openclaw`     | `npm install -g openclaw@latest`                                             | ✓      |
-| `nanobot`       | `nanobot`      | `pip install nanobot-ai`                                                     | ✓      |
-| `iflow`         | `iflow`        | `npm install -g @iflow-ai/iflow-cli`                                         | ✓      |
-| `pi`            | `pi`           | `npm install -g @earendil-works/pi-coding-agent`                             | ✗      |
-| `kilo`          | `kilo`         | `npm install -g @kilocode/cli`                                               | ✗      |
-| `grok`          | `grok`         | `curl -fsSL https://x.ai/cli/install.sh \| bash`                              | ✗      |
+| Formula name                | CLI command    | Install via            | AionUI |
+|-----------------------------|----------------|------------------------|--------|
+| `opencode`                  | `opencode`     | `brew install opencode` | ✓     |
+| `pi-coding-agent`           | `pi`           | `brew install pi-coding-agent` | ✗ |
+| `kilo`                      | `kilo`         | `brew install kilo`     | ✗      |
+| `gemini-cli`                | `gemini`       | `brew install gemini-cli` | ✓   |
+| `block-goose-cli`           | `goose`        | `brew install block-goose-cli` | ✓ |
+| `qwen-code`                 | `qwen`         | `brew install qwen-code` | ✓    |
+| `Tencent-CodeBuddy/tap/codebuddy-code` | `codebuddy` | `brew install Tencent-CodeBuddy/tap/codebuddy-code` | ✓ |
+| `kimi-cli`                  | `kimi`         | `brew install kimi-cli` | ✓      |
+| `kiro-cli`                  | `kiro-cli`     | `brew install kiro-cli` | ✗      |
+| `claude-code`               | `claude`       | `brew install claude-code` | ✓ (cask) |
+| `copilot-cli`               | `copilot`      | `brew install copilot-cli` | ✓ (cask) |
 
-Agents marked ✗ are **not supported by AionUI** — AionUI won't auto-detect them on PATH. They are still installed and can be used from the command line.
+Packages marked (cask) are macOS-only GUI/formulae and will be skipped on Linux. All others install on any platform.
 
-To add an agent after build, use `npm install -g <package>` inside the container (mise-managed Node.js is on PATH). Each agent needs its own API key or subscription configured separately (e.g. `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, etc.) — set those in your `.env` or shell profile.
+You can set `BREW_PACKAGES` to any brew formula name — it is not limited to coding agents.

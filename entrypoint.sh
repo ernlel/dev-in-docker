@@ -69,13 +69,6 @@ fi
 export PATH="$PATH:${DEV_HOME}/.local/bin"
 eval "$("$MISE_BIN" activate bash 2>/dev/null)" || true
 
-# Persist PATH for `docker compose exec` shells
-cat > /etc/profile.d/mise.sh <<-PROFILE
-export MISE_DATA_DIR="$MISE_DATA"
-export MISE_CONFIG_DIR="$MISE_CONFIG"
-export PATH="\$PATH:${DEV_HOME}/.local/share/mise/shims:${DEV_HOME}/.local/bin"
-PROFILE
-
 if [ -n "${MISE_DEFAULT_TOOLS:-}" ]; then
     echo ">>> Installing mise default tools: $MISE_DEFAULT_TOOLS"
     # shellcheck disable=SC2086
@@ -83,12 +76,32 @@ if [ -n "${MISE_DEFAULT_TOOLS:-}" ]; then
     sudo -u "$RUN_USER" "$MISE_BIN" install
 fi
 
-if [ -n "${AIONUI_CLI_AGENTS:-}" ] && [ -x /usr/local/bin/install-agents.sh ]; then
-    echo ">>> Installing CLI agents …"
-    # shellcheck disable=SC2086
-    sudo -u "$RUN_USER" AIONUI_CLI_AGENTS="$AIONUI_CLI_AGENTS" \
-        "$MISE_BIN" x $MISE_DEFAULT_TOOLS -- /usr/local/bin/install-agents.sh
+# ── Homebrew ──
+BREW_HOME="${DEV_HOME}/.linuxbrew"
+if [ -d /opt/linuxbrew ]; then
+    if [ ! -f "$BREW_HOME/bin/brew" ]; then
+        echo ">>> Setting up Homebrew …"
+        mkdir -p "$BREW_HOME"
+        cp -a /opt/linuxbrew/. "$BREW_HOME/"
+        chown -R "$HOST_UID:$HOST_GID" "$BREW_HOME" 2>/dev/null || true
+    fi
+    export PATH="$BREW_HOME/bin:$PATH"
+    eval "$("$BREW_HOME/bin/brew" shellenv 2>/dev/null)" || true
 fi
+
+if [ -n "${BREW_PACKAGES:-}" ]; then
+    echo ">>> Installing Homebrew packages …"
+    for pkg in $(echo "$BREW_PACKAGES" | tr ',' ' '); do
+        sudo -u "$RUN_USER" "$BREW_HOME/bin/brew" install "$pkg" || true
+    done
+fi
+
+# Persist PATH for `docker compose exec` shells
+cat > /etc/profile.d/mise.sh <<-PROFILE
+export MISE_DATA_DIR="$MISE_DATA"
+export MISE_CONFIG_DIR="$MISE_CONFIG"
+export PATH="\$PATH:${DEV_HOME}/.local/share/mise/shims:${DEV_HOME}/.local/bin:${BREW_HOME}/bin"
+PROFILE
 
 CODE_SERVER_CONFIG="${DEV_HOME}/.config/code-server/config.yaml"
 if [ ! -f "$CODE_SERVER_CONFIG" ]; then

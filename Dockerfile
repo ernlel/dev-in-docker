@@ -99,9 +99,11 @@ COPY --from=aionui-builder /app/node_modules /app/aionui/node_modules
 COPY --from=aionui-builder /usr/local/bin/bun /usr/local/bin/bun
 COPY --from=aionui-builder /usr/local/lib/node_modules /usr/local/lib/node_modules
 
-# ── Runtime agent installer ──
-COPY install-agents.sh /usr/local/bin/install-agents.sh
-RUN chmod +x /usr/local/bin/install-agents.sh
+# ── Homebrew (Linuxbrew) — portable tarball, user-copied at runtime ──
+RUN curl -fsSL https://github.com/Homebrew/brew/tarball/master -o /tmp/brew.tar.gz \
+    && mkdir -p /opt/linuxbrew \
+    && tar xzf /tmp/brew.tar.gz --strip-components 1 -C /opt/linuxbrew \
+    && rm /tmp/brew.tar.gz
 
 # ── Entrypoint ──
 COPY entrypoint.sh /usr/local/bin/entrypoint.sh
