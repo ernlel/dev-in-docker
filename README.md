@@ -79,6 +79,7 @@ services:
       - ./post-install.sh:/app/post-install.sh:ro
       # ^ copy default volumes above, then add yours:
       - /path/to/project:/workspace/project
+      - /another/path:/another:ro
 ```
 
 ## Updating components
