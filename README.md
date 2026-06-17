@@ -184,7 +184,7 @@ Installed at build time. Tools defined in `MISE_DEFAULT_TOOLS` are installed aut
 [Homebrew](https://brew.sh/) is installed at build time and set up in your persistent home at runtime. CLI agents are not auto-installed — run the post-install script once inside the container:
 
 ```bash
-docker compose exec dev bash
+docker compose exec -u dev dev bash
 bash /app/post-install.sh
 ```
 
