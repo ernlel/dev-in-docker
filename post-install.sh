@@ -2,6 +2,8 @@
 set -u
 set -o pipefail
 
+source /etc/profile.d/mise.sh
+
 echo ">>> Post-install: installing CLI agents …"
 
 brew install anomalyco/tap/opencode
