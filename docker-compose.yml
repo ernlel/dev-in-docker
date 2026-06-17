@@ -42,7 +42,7 @@ services:
     volumes:
       # :z relabels the mount for container access (required on SELinux-
       # enforcing hosts like Fedora). Remove :z if you're on macOS.
-      - "${HOST_HOME:-~}:/home/dev:consistent,z"
+      - "${HOME_MOUNT:-~}:/home/dev:consistent,z"
       - /var/run/docker.sock:/var/run/docker.sock
       - ./post-install.sh:/app/post-install.sh:ro
       # Uncomment to mount a host directory at /workspace:
