@@ -105,11 +105,9 @@ RUN curl -fsSL https://github.com/Homebrew/brew/tarball/master -o /tmp/brew.tar.
     && tar xzf /tmp/brew.tar.gz --strip-components 1 -C /opt/linuxbrew \
     && rm /tmp/brew.tar.gz
 
-# ── Entrypoint & Post-install ──
+# ── Entrypoint ──
 COPY entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh
-COPY post-install.sh /app/post-install.sh
-RUN chmod +x /app/post-install.sh
 
 WORKDIR /workspace
 EXPOSE 8443 3000
