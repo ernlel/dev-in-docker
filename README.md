@@ -5,7 +5,7 @@
 ```bash
 # 1. Copy and edit environment
 cp .env.example .env
-#    Edit .env: set HOST_HOME, CODE_SERVER_PASSWORD, AIONUI_PASSWORD, etc.
+#    Edit .env: set HOME_MOUNT, CODE_SERVER_PASSWORD, AIONUI_PASSWORD, etc.
 
 # 2. First build (takes 5-15 min)
 docker compose build --no-cache
@@ -63,10 +63,10 @@ Your chosen directory is mounted at `/home/dev` inside the container. Everything
 Set it in [`.env`](.env):
 
 ```env
-HOST_HOME=/mnt/Data/Dev   # Host path to mount (default: ~)
+HOME_MOUNT=/mnt/Data/Dev   # Host path to mount (default: ~)
 ```
 
-> **Note**: The directory must be writable by your user on the host. If you see EACCES errors, check `ls -ld $HOST_HOME` — it should be owned by you, not root.
+> **Note**: The directory must be writable by your user on the host. If you see EACCES errors, check `ls -ld $HOME_MOUNT` — it should be owned by you, not root.
 
 To mount additional host paths (e.g. another project directory), create [`docker-compose.override.yml`](docker-compose.override.yml) (Docker Compose loads it automatically):
 
@@ -74,7 +74,7 @@ To mount additional host paths (e.g. another project directory), create [`docker
 services:
   dev:
     volumes:
-      - "${HOST_HOME:-~}:/home/dev:consistent,z"
+      - "${HOME_MOUNT:-~}:/home/dev:consistent,z"
       - /var/run/docker.sock:/var/run/docker.sock
       - ./post-install.sh:/app/post-install.sh:ro
       # ^ copy default volumes above, then add yours:
@@ -150,7 +150,7 @@ docker compose restart dev
 │                       │  │ Go, Python, …)       │   │   │
 │                       │  └──────────────────────┘   │   │
 │                                                         │
-│  Mounts: <HOST_HOME> → /home/dev  (persistent)          │
+│  Mounts: <HOME_MOUNT> → /home/dev  (persistent)          │
 │          /var/run/docker.sock                           │
 └───────────────────────────────────────────────────────┘
 ```
