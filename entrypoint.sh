@@ -96,6 +96,16 @@ export MISE_CONFIG_DIR="$MISE_CONFIG"
 export PATH="\$PATH:${DEV_HOME}/.local/share/mise/shims:${DEV_HOME}/.local/bin:${BREW_HOME}/bin"
 PROFILE
 
+# Ensure brew/mise PATH in interactive non-login shells (docker compose exec)
+if [ ! -f "${DEV_HOME}/.bashrc" ]; then
+    touch "${DEV_HOME}/.bashrc"
+    chown "$HOST_UID:$HOST_GID" "${DEV_HOME}/.bashrc"
+fi
+if ! grep -q "profile.d/mise" "${DEV_HOME}/.bashrc" 2>/dev/null; then
+    echo -e "\n# Source mise/brew PATH for non-login shells" >> "${DEV_HOME}/.bashrc"
+    echo "source /etc/profile.d/mise.sh" >> "${DEV_HOME}/.bashrc"
+fi
+
 CODE_SERVER_CONFIG="${DEV_HOME}/.config/code-server/config.yaml"
 if [ ! -f "$CODE_SERVER_CONFIG" ]; then
     sudo -u "$RUN_USER" mkdir -p "$(dirname "$CODE_SERVER_CONFIG")"
