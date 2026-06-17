@@ -45,8 +45,7 @@ services:
       - "${HOME_MOUNT:-~}:/home/dev:consistent,z"
       - /var/run/docker.sock:/var/run/docker.sock
       - ./post-install.sh:/app/post-install.sh:ro
-      # Uncomment to mount a host directory at /workspace:
-      # - "${WORKSPACE_MOUNT}:/workspace:consistent,z"
+      - "${WORKSPACE_MOUNT}:/workspace:consistent,z"
 
     # ── Ports ──
     ports:
