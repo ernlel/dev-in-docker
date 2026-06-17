@@ -186,7 +186,11 @@ Installed at build time. Tools defined in `MISE_DEFAULT_TOOLS` are installed aut
 Run [`post-install.sh`](post-install.sh) inside the container to install any CLI tools (agents, editors, utilities, …):
 
 ```bash
-docker compose exec -u dev dev bash /app/post-install.sh
+docker compose exec -u dev dev bash
+```
+Inside container run:
+```bash
+bash /app/post-install.sh
 ```
 
 Edit the script on the host to add or remove tools, then re-run it. Changes take effect immediately (no rebuild).
