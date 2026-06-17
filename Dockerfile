@@ -18,7 +18,7 @@ ARG AIONCORE_VERSION
 
 WORKDIR /app
 
-RUN apt-get update && apt-get install -y --no-install-recommends \
+RUN apt-get update && apt-get upgrade -y && apt-get install -y --no-install-recommends \
     git ca-certificates curl bzip2 \
     && rm -rf /var/lib/apt/lists/*
 
@@ -43,7 +43,7 @@ FROM debian:bookworm-slim AS dev-env
 
 ARG CODE_SERVER_VERSION
 
-RUN apt-get update && apt-get install -y --no-install-recommends \
+RUN apt-get update && apt-get upgrade -y && apt-get install -y --no-install-recommends \
     bzip2 \
     ca-certificates \
     curl \
