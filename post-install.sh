@@ -1,5 +1,6 @@
 #!/bin/bash
-set -euo pipefail
+set -u
+set -o pipefail
 
 source /etc/profile.d/mise.sh
 
@@ -12,5 +13,6 @@ npm install -g @qwen-code/qwen-code@latest
 brew install uv
 uv tool install --python 3.13 kimi-cli
 npm install -g @github/copilot
+brew install fresh-editor
 
 echo ">>> Done. Run each tool with --help to verify."
