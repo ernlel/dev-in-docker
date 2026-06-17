@@ -148,6 +148,7 @@ docker compose restart dev
 ├── Dockerfile         # Multi-stage: builds AionUI + dev tools + Homebrew
 ├── docker-compose.yml # Service definition + build args
 ├── entrypoint.sh      # UID matching, mise, Homebrew, code-server + AionUI launch
+├── post-install.sh    # Run inside container to install CLI agents
 ├── .env               # All configurable versions and settings
 └── README.md
 ```
@@ -178,42 +179,25 @@ Both run in the same container. Data persists at `~/.aionui-web/` on the host.
 
 Installed at build time. Tools defined in `MISE_DEFAULT_TOOLS` are installed automatically on first run. All mise data persists at `~/.local/share/mise/` on the host.
 
-### Homebrew packages
+### CLI agents (post-install)
 
-[Homebrew](https://brew.sh/) is installed at build time and set up in your persistent home at runtime. Set `BREW_PACKAGES` in `.env` to install any Homebrew formulae when the container starts:
-
-```env
-BREW_PACKAGES=opencode,pi-coding-agent,Kilo-Org/tap/kilo,gemini-cli,kimi-cli,nanobot,hermes-agent,mistral-vibe
-```
-
-Then start (or restart):
+[Homebrew](https://brew.sh/) is installed at build time and set up in your persistent home at runtime. CLI agents are not auto-installed — run the post-install script once inside the container:
 
 ```bash
-docker compose up -d
+docker compose exec dev bash
+bash /app/post-install.sh
 ```
 
-Packages are installed via `brew install` (formula first, cask fallback) into `~/.linuxbrew/` (persistent in your mounted home). To add or remove packages, edit `BREW_PACKAGES` and restart.
+The script installs several agents via brew, npm, and uv:
 
-Common CLI agent packages:
+```
+brew install anomalyco/tap/opencode
+npm install -g --ignore-scripts @earendil-works/pi-coding-agent
+npm install -g @google/gemini-cli
+npm install -g @qwen-code/qwen-code@latest
+brew install uv
+uv tool install --python 3.13 kimi-cli
+npm install -g @github/copilot
+```
 
-| Package name      | CLI command    | Install via                              | AionUI |
-|-------------------|----------------|------------------------------------------|--------|
-| `opencode`        | `opencode`     | `brew install opencode`                  | ✓     |
-| `pi-coding-agent` | `pi`           | `brew install pi-coding-agent`           | ✗      |
-| `kilo`            | `kilo`         | `brew install Kilo-Org/tap/kilo`         | ✗      |
-| `gemini-cli`      | `gemini`       | `brew install gemini-cli`                | ✓      |
-| `block-goose-cli` | `goose`        | `brew install block-goose-cli`           | ✓      |
-| `qwen-code`       | `qwen`         | `brew install qwen-code`                 | ✓      |
-| `kimi-cli`        | `kimi`         | `brew install kimi-cli`                  | ✓      |
-| `nanobot`         | `nanobot`      | `brew install nanobot`                   | ✗      |
-| `hermes-agent`    | `hermes`       | `brew install hermes-agent`              | ✗      |
-| `mistral-vibe`    | `mistral-vibe` | `brew install mistral-vibe`              | ✗      |
-| `claude-code`     | `claude`       | `brew install --cask claude-code`        | ✗      |
-| `copilot-cli`     | `copilot`      | `brew install --cask copilot-cli`        | ✗      |
-| `factory`         | `factory`      | `brew install --cask factory`            | ✗      |
-| `cursor-cli`      | `cursor`       | `brew install --cask cursor-cli`         | ✗      |
-| `openclaw`        | `openclaw`     | `brew install --cask openclaw`           | ✗      |
-| `codex`           | `codex`        | `brew install --cask codex`              | ✗      |
-| `grok-build`      | `grok`         | `brew install --cask grok-build`         | ✗      |
-
-You can set `BREW_PACKAGES` to any brew formula name — it is not limited to coding agents.
+Edit [`post-install.sh`](post-install.sh) to add or remove agents, then re-run it.

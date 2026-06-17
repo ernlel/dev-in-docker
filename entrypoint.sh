@@ -89,20 +89,6 @@ if [ -d /opt/linuxbrew ]; then
     eval "$("$BREW_HOME/bin/brew" shellenv 2>/dev/null)" || true
 fi
 
-if [ -n "${BREW_PACKAGES:-}" ]; then
-    echo ">>> Installing Homebrew packages …"
-    for pkg in $(echo "$BREW_PACKAGES" | tr ',' ' '); do
-        echo "  → Installing $pkg …"
-        if sudo -u "$RUN_USER" "$BREW_HOME/bin/brew" install "$pkg"; then
-            echo "  ✓ $pkg"
-        elif sudo -u "$RUN_USER" "$BREW_HOME/bin/brew" install --cask "$pkg"; then
-            echo "  ✓ $pkg (cask)"
-        else
-            echo "  ⚠ $pkg — failed to install"
-        fi
-    done
-fi
-
 # Persist PATH for `docker compose exec` shells
 cat > /etc/profile.d/mise.sh <<-PROFILE
 export MISE_DATA_DIR="$MISE_DATA"
