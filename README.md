@@ -64,10 +64,22 @@ Set it in [`.env`](.env):
 
 ```env
 HOST_HOME=/mnt/Data/Dev   # Host path to mount (default: ~)
-CONTAINER_HOME=/home/dev  # Mount target (don't change unless you update entrypoint)
 ```
 
 > **Note**: The directory must be writable by your user on the host. If you see EACCES errors, check `ls -ld $HOST_HOME` — it should be owned by you, not root.
+
+To mount additional host paths (e.g. another project directory), create [`docker-compose.override.yml`](docker-compose.override.yml) (Docker Compose loads it automatically):
+
+```yaml
+services:
+  dev:
+    volumes:
+      - "${HOST_HOME:-~}:/home/dev:consistent,z"
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./post-install.sh:/app/post-install.sh:ro
+      # ^ copy default volumes above, then add yours:
+      - /path/to/project:/workspace/project
+```
 
 ## Updating components
 
