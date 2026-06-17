@@ -171,6 +171,8 @@ AionUI consists of two repos:
 
 Both run in the same container. Data persists at `~/.aionui-web/` on the host.
 
+AionUI-compatible CLI agents: `claude`, `codex`, `copilot`, `opencode`, `goose`, `gemini`, `qwen`, `augment`, `codebuddy`, `kimi`, `factory`, `qoder`, `mistral`, `snow`, `hermes`, `cursor`, `kiro`, `openclaw`, `nanobot`, `iflow`.
+
 ### Docker access
 
 `/var/run/docker.sock` is mounted read-write. The entrypoint detects the socket's group GID and adds the `dev` user to it. Use `docker` CLI inside the container as if you were on the host.
@@ -179,25 +181,12 @@ Both run in the same container. Data persists at `~/.aionui-web/` on the host.
 
 Installed at build time. Tools defined in `MISE_DEFAULT_TOOLS` are installed automatically on first run. All mise data persists at `~/.local/share/mise/` on the host.
 
-### CLI agents (post-install)
+### Post-install script
 
-[Homebrew](https://brew.sh/) is installed at build time and set up in your persistent home at runtime. CLI agents are not auto-installed — run the post-install script once inside the container:
+Run [`post-install.sh`](post-install.sh) inside the container to install any CLI tools (agents, editors, utilities, …):
 
 ```bash
-docker compose exec -u dev dev bash
-bash /app/post-install.sh
+docker compose exec -u dev dev bash /app/post-install.sh
 ```
 
-The script installs several agents via brew, npm, and uv:
-
-```
-brew install anomalyco/tap/opencode
-npm install -g --ignore-scripts @earendil-works/pi-coding-agent
-npm install -g @google/gemini-cli
-npm install -g @qwen-code/qwen-code@latest
-brew install uv
-uv tool install --python 3.13 kimi-cli
-npm install -g @github/copilot
-```
-
-Edit [`post-install.sh`](post-install.sh) to add or remove agents, then re-run it.
+Edit the script on the host to add or remove tools, then re-run it. Changes take effect immediately (no rebuild).
