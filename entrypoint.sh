@@ -76,33 +76,28 @@ if [ -n "${MISE_DEFAULT_TOOLS:-}" ]; then
     sudo -u "$RUN_USER" "$MISE_BIN" install
 fi
 
-# ── Homebrew ──
-BREW_HOME="${DEV_HOME}/.linuxbrew"
-if [ -d /opt/linuxbrew ]; then
-    if [ ! -f "$BREW_HOME/bin/brew" ]; then
-        echo ">>> Setting up Homebrew …"
-        mkdir -p "$BREW_HOME"
-        cp -a /opt/linuxbrew/. "$BREW_HOME/"
-        chown -R "$HOST_UID:$HOST_GID" "$BREW_HOME" 2>/dev/null || true
-    fi
-    export PATH="$BREW_HOME/bin:$PATH"
-    eval "$("$BREW_HOME/bin/brew" shellenv 2>/dev/null)" || true
+# ── Nix package manager ──
+if [ -f /etc/profile.d/nix.sh ]; then
+    echo ">>> Setting up Nix …"
+    . /etc/profile.d/nix.sh
+    export NIX_PROFILES="/nix/var/nix/profiles/default ${DEV_HOME}/.nix-profile"
 fi
 
 # Persist PATH for `docker compose exec` shells
+NIX_PATH="/nix/var/nix/profiles/default/bin"
 cat > /etc/profile.d/mise.sh <<-PROFILE
 export MISE_DATA_DIR="$MISE_DATA"
 export MISE_CONFIG_DIR="$MISE_CONFIG"
-export PATH="\$PATH:${DEV_HOME}/.local/share/mise/shims:${DEV_HOME}/.local/bin:${BREW_HOME}/bin"
+export PATH="\$PATH:${DEV_HOME}/.local/share/mise/shims:${DEV_HOME}/.local/bin:${NIX_PATH}"
 PROFILE
 
-# Ensure brew/mise PATH in interactive non-login shells (docker compose exec)
+# Ensure nix/mise PATH in interactive non-login shells (docker compose exec)
 if [ ! -f "${DEV_HOME}/.bashrc" ]; then
     touch "${DEV_HOME}/.bashrc"
     chown "$HOST_UID:$HOST_GID" "${DEV_HOME}/.bashrc"
 fi
 if ! grep -q "profile.d/mise" "${DEV_HOME}/.bashrc" 2>/dev/null; then
-    echo -e "\n# Source mise/brew PATH for non-login shells" >> "${DEV_HOME}/.bashrc"
+    echo -e "\n# Source mise/Nix PATH for non-login shells" >> "${DEV_HOME}/.bashrc"
     echo "source /etc/profile.d/mise.sh" >> "${DEV_HOME}/.bashrc"
 fi
 
