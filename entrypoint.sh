@@ -28,15 +28,21 @@ else
                 --home-dir "$DEV_HOME" --shell "$DEV_SHELL" "$DEV_USER"
     fi
 
-    # Ensure dev is in the nix build group
-    if getent group nixbld >/dev/null 2>&1; then
-        usermod -aG nixbld "$DEV_USER"
-    fi
-
     chown "$HOST_UID:$HOST_GID" "$DEV_HOME" 2>/dev/null || true
 
     echo "$DEV_USER ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/"$DEV_USER"
     chmod 0440 /etc/sudoers.d/"$DEV_USER"
+fi
+
+# ── Nix package manager ──
+# Bind mount hides /nix from the image on first start — restore from backup
+if [ -d /opt/nix-backup ] && [ ! -f /nix/var/nix/profiles/default/bin/nix ]; then
+    echo ">>> Restoring Nix from image backup …"
+    cp -a /opt/nix-backup/. /nix/
+fi
+# Ensure the Nix db is writable by the runtime user
+if [ -n "${RUN_USER:-}" ] && [ "$RUN_USER" != "root" ] && [ -f /nix/var/nix/profiles/default/bin/nix ]; then
+    chown -R "$HOST_UID:$HOST_GID" /nix/var/nix/db /nix/var/nix/profiles 2>/dev/null || true
 fi
 
 DOCKER_SOCK="/var/run/docker.sock"
@@ -81,14 +87,6 @@ if [ -n "${MISE_DEFAULT_TOOLS:-}" ]; then
     sudo -u "$RUN_USER" "$MISE_BIN" install
 fi
 
-# ── Nix package manager ──
-# Bind mount hides /nix from the image on first start — restore from backup
-if [ -d /opt/nix-backup ] && [ ! -f /nix/var/nix/profiles/default/bin/nix ]; then
-    echo ">>> Restoring Nix from image backup …"
-    cp -a /opt/nix-backup/. /nix/
-    chown -R root:nixbld /nix/var/nix/db
-    chmod g+w /nix/var/nix/db /nix/var/nix/db/big-lock 2>/dev/null || true
-fi
 if [ -f /etc/profile.d/nix.sh ]; then
     echo ">>> Setting up Nix …"
     . /etc/profile.d/nix.sh
