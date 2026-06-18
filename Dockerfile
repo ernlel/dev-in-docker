@@ -122,7 +122,8 @@ RUN curl -fsSL https://releases.nixos.org/nix/nix-${NIX_VERSION}/nix-${NIX_VERSI
     && rm -rf /tmp/nix.tar.xz nix-${NIX_VERSION}-$(uname -m)-linux \
     && /nix/var/nix/profiles/default/bin/nix-collect-garbage --delete-old \
     && /nix/var/nix/profiles/default/bin/nix-store --optimise \
-    && /nix/var/nix/profiles/default/bin/nix-store --verify --check-contents
+    && /nix/var/nix/profiles/default/bin/nix-store --verify --check-contents \
+    && cp -a /nix /opt/nix-backup
 
 # ── Entrypoint ──
 COPY entrypoint.sh /usr/local/bin/entrypoint.sh

@@ -77,6 +77,11 @@ if [ -n "${MISE_DEFAULT_TOOLS:-}" ]; then
 fi
 
 # ── Nix package manager ──
+# Bind mount hides /nix from the image on first start — restore from backup
+if [ -d /opt/nix-backup ] && [ ! -f /nix/var/nix/profiles/default/bin/nix ]; then
+    echo ">>> Restoring Nix from image backup …"
+    cp -a /opt/nix-backup/. /nix/
+fi
 if [ -f /etc/profile.d/nix.sh ]; then
     echo ">>> Setting up Nix …"
     . /etc/profile.d/nix.sh
