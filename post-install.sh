@@ -11,13 +11,13 @@ fi
 
 echo ">>> Post-install: installing CLI agents …"
 
-nix profile install nixpkgs#opencode
+nix profile add nixpkgs#opencode
 npm install -g --ignore-scripts @earendil-works/pi-coding-agent
 npm install -g @google/gemini-cli
 npm install -g @qwen-code/qwen-code@latest
-nix profile install nixpkgs#uv
+nix profile add nixpkgs#uv
 uv tool install --python 3.13 kimi-cli
 npm install -g @github/copilot
-nix profile install nixpkgs#fresh-editor
+nix profile add nixpkgs#fresh-editor
 
 echo ">>> Done. Run each tool with --help to verify."
