@@ -40,9 +40,9 @@ if [ -d /opt/nix-backup ] && [ ! -f /nix/var/nix/profiles/default/bin/nix ]; the
     echo ">>> Restoring Nix from image backup …"
     cp -a /opt/nix-backup/. /nix/
 fi
-# Ensure the Nix db is writable by the runtime user
+# Single-user nix — dev user owns the whole store
 if [ -n "${RUN_USER:-}" ] && [ "$RUN_USER" != "root" ] && [ -f /nix/var/nix/profiles/default/bin/nix ]; then
-    chown -R "$HOST_UID:$HOST_GID" /nix/var/nix/db /nix/var/nix/profiles 2>/dev/null || true
+    chown -R "$HOST_UID:$HOST_GID" /nix
 fi
 
 DOCKER_SOCK="/var/run/docker.sock"
