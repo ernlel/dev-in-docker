@@ -158,9 +158,9 @@ docker compose restart dev
 ## File layout
 
 ```
-├── Dockerfile         # Multi-stage: builds AionUI + dev tools + Homebrew
+├── Dockerfile         # Multi-stage: builds AionUI + dev tools + Nix
 ├── docker-compose.yml # Service definition + build args
-├── entrypoint.sh      # UID matching, mise, Homebrew, code-server + AionUI launch
+├── entrypoint.sh      # UID matching, mise, Nix, code-server + AionUI launch
 ├── post-install.sh    # Run inside container to install CLI agents
 ├── .env               # All configurable versions and settings
 └── README.md
@@ -185,6 +185,10 @@ AionUI consists of two repos:
 Both run in the same container. Data persists at `~/.aionui-web/` on the host.
 
 AionUI-compatible CLI agents: `claude`, `codex`, `copilot`, `opencode`, `goose`, `gemini`, `qwen`, `augment`, `codebuddy`, `kimi`, `factory`, `qoder`, `mistral`, `snow`, `hermes`, `cursor`, `kiro`, `openclaw`, `nanobot`, `iflow`.
+
+#### Nix
+
+Installed at build time via the single-user (no-daemon) installer at `/nix`. The Nix store (`/nix`) is persisted across container rebuilds via a named Docker volume (`nix-store`). Use `nix profile install nixpkgs#<pkg>` to install packages, or `nix-env -iA nixpkgs.<pkg>` for ad-hoc use. Default PATH includes `/nix/var/nix/profiles/default/bin`.
 
 ### Docker access
 

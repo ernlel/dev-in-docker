@@ -17,6 +17,7 @@ services:
       dockerfile: Dockerfile
       args:
         NODE_VERSION: "${NODE_VERSION:-20}"
+        NIX_VERSION: "${NIX_VERSION:-2.34.7}"
         AIONUI_REPO: "${AIONUI_REPO:-https://github.com/iOfficeAI/AionUi.git}"
         AIONUI_TAG: "${AIONUI_TAG:-v2.1.9}"
         AIONCORE_VERSION: "${AIONCORE_VERSION:-v0.1.29}"
@@ -38,14 +39,17 @@ services:
       - SETUID
       - SETGID
 
-    # ── Persist host home (dotfiles, SSH keys, projects, mise data, …) ──
+    # ── Persist host home + Nix store ──
     volumes:
       # :z relabels the mount for container access (required on SELinux-
       # enforcing hosts like Fedora). Remove :z if you're on macOS.
       - "${HOME_MOUNT:-~}:/home/dev:consistent,z"
       - /var/run/docker.sock:/var/run/docker.sock
       - ./post-install.sh:/app/post-install.sh:ro
-      - "${WORKSPACE_MOUNT}:/workspace:consistent,z"
+      # Nix store (persists packages across rebuilds):
+      - nix-store:/nix:Z
+      # Uncomment to mount a host directory at /workspace:
+      # - "${WORKSPACE_MOUNT:-}:/workspace:consistent,z"
 
     # ── Ports ──
     ports:
@@ -82,3 +86,6 @@ services:
       timeout: 10s
       retries: 3
       start_period: 20s
+
+volumes:
+  nix-store:

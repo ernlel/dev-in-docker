@@ -2,6 +2,7 @@
 #  Version overrides — pass via --build-arg or docker-compose build.args
 # ======================================================================
 ARG NODE_VERSION=20
+ARG NIX_VERSION=2.34.7
 ARG AIONUI_REPO=https://github.com/iOfficeAI/AionUi.git
 ARG AIONUI_TAG=v2.1.9
 ARG AIONCORE_VERSION=v0.1.29
@@ -100,11 +101,28 @@ COPY --from=aionui-builder /app/node_modules /app/aionui/node_modules
 COPY --from=aionui-builder /usr/local/bin/bun /usr/local/bin/bun
 COPY --from=aionui-builder /usr/local/lib/node_modules /usr/local/lib/node_modules
 
-# ── Homebrew (Linuxbrew) — portable tarball, user-copied at runtime ──
-RUN curl -fsSL https://github.com/Homebrew/brew/tarball/master -o /tmp/brew.tar.gz \
-    && mkdir -p /opt/linuxbrew \
-    && tar xzf /tmp/brew.tar.gz --strip-components 1 -C /opt/linuxbrew \
-    && rm /tmp/brew.tar.gz
+ARG NIX_VERSION=2.34.7
+
+# ── Nix package manager (multi-user, no daemon) — store at /nix ──
+# Adapted from the official nixos/nix Dockerfile approach.
+# The nixbld users + sandbox=false are required for Nix inside containers.
+RUN curl -fsSL https://releases.nixos.org/nix/nix-${NIX_VERSION}/nix-${NIX_VERSION}-$(uname -m)-linux.tar.xz \
+       -o /tmp/nix.tar.xz \
+    && tar xf /tmp/nix.tar.xz \
+    && groupadd -r nixbld \
+    && for i in $(seq 1 30); do \
+         useradd -r -M -d /var/empty -s /sbin/nologin -G nixbld -u $((30000 + i)) nixbld$i; \
+       done \
+    && mkdir -m 0755 /etc/nix \
+    && echo 'sandbox = false' > /etc/nix/nix.conf \
+    && echo 'experimental-features = nix-command flakes' >> /etc/nix/nix.conf \
+    && mkdir -m 0755 /nix \
+    && USER=root sh nix-${NIX_VERSION}-$(uname -m)-linux/install \
+    && ln -s /nix/var/nix/profiles/default/etc/profile.d/nix.sh /etc/profile.d/nix.sh \
+    && rm -rf /tmp/nix.tar.xz nix-${NIX_VERSION}-$(uname -m)-linux \
+    && /nix/var/nix/profiles/default/bin/nix-collect-garbage --delete-old \
+    && /nix/var/nix/profiles/default/bin/nix-store --optimise \
+    && /nix/var/nix/profiles/default/bin/nix-store --verify --check-contents
 
 # ── Entrypoint ──
 COPY entrypoint.sh /usr/local/bin/entrypoint.sh
