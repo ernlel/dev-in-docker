@@ -46,8 +46,8 @@ services:
       - "${HOME_MOUNT:-~}:/home/dev:consistent,z"
       - /var/run/docker.sock:/var/run/docker.sock
       - ./post-install.sh:/app/post-install.sh:ro
-      # Nix store (persists packages across rebuilds):
-      - nix-store:/nix:Z
+      # Nix store under home mount (persists packages across rebuilds):
+      - "${HOME_MOUNT:-~}/.nix:/nix:Z"
       # Uncomment to mount a host directory at /workspace:
       # - "${WORKSPACE_MOUNT:-}:/workspace:consistent,z"
 
@@ -86,6 +86,3 @@ services:
       timeout: 10s
       retries: 3
       start_period: 20s
-
-volumes:
-  nix-store:
