@@ -29,6 +29,7 @@ RUN apt-get update && apt-get upgrade -y && apt-get install -y --no-install-reco
     sudo \
     unzip \
     xz-utils \
+    xdg-utils \
     build-essential \
     && rm -rf /var/lib/apt/lists/* \
     && curl -fsSL https://raw.githubusercontent.com/ncopa/su-exec/master/su-exec.c \
