@@ -60,6 +60,7 @@ services:
 
       # opencode web server
       OPENCODE_PORT: "${OPENCODE_PORT:-3000}"
+      OPENCODE_USERNAME: "${OPENCODE_USERNAME:-opencode}"
       OPENCODE_PASSWORD: "${OPENCODE_PASSWORD:-}"
 
       # Home directory inside the container (must match /home/dev in entrypoint)

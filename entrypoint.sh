@@ -134,8 +134,9 @@ start_opencode() {
     local opencode_log="/tmp/opencode.log"
     echo ">>> Starting opencode web on port $opencode_port …"
     sudo -u "$RUN_USER" env \
+        OPENCODE_SERVER_USERNAME="${OPENCODE_USERNAME:-opencode}" \
         OPENCODE_SERVER_PASSWORD="${OPENCODE_PASSWORD:-}" \
-        opencode web --hostname 0.0.0.0 --port "$opencode_port" > "$opencode_log" 2>&1 &
+        opencode serve --hostname 0.0.0.0 --port "$opencode_port" > "$opencode_log" 2>&1 &
     local pid=$!
     echo ">>> opencode PID: $pid"
     sleep 2
