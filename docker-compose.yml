@@ -1,12 +1,12 @@
 # ──────────────────────────────────────────────────────────────────────
-#  Dev Environment — code-server + AionUI Web + mise + docker-from-host
+#  Dev Environment — code-server + opencode + mise + docker-from-host
 # ──────────────────────────────────────────────────────────────────────
 #  Usage:
 #    docker compose up -d
-#    # code-server: http://localhost:8443   password: devpass
-#    # AionUI:      http://localhost:3000
+#    # code-server: http://localhost:8443   password: see .env
+#    # opencode:    http://localhost:3000   password: see .env
 #
-#  Rebuild after Dockerfile changes:
+#  Rebuild after Dockerfile or version changes:
 #    docker compose build --no-cache
 # ──────────────────────────────────────────────────────────────────────
 
@@ -16,12 +16,9 @@ services:
       context: .
       dockerfile: Dockerfile
       args:
-        NODE_VERSION: "${NODE_VERSION:-20}"
-        NIX_VERSION: "${NIX_VERSION:-2.34.7}"
-        AIONUI_REPO: "${AIONUI_REPO:-https://github.com/iOfficeAI/AionUi.git}"
-        AIONUI_TAG: "${AIONUI_TAG:-v2.1.9}"
-        AIONCORE_VERSION: "${AIONCORE_VERSION:-v0.1.29}"
-        CODE_SERVER_VERSION: "${CODE_SERVER_VERSION:-4.96.4}"
+        NIX_VERSION: "${NIX_VERSION:-latest}"
+        CODE_SERVER_VERSION: "${CODE_SERVER_VERSION:-latest}"
+        OPENCODE_VERSION: "${OPENCODE_VERSION:-latest}"
     container_name: dev
     hostname: dev
     restart: unless-stopped
@@ -54,29 +51,28 @@ services:
     # ── Ports ──
     ports:
       - "${CODE_SERVER_PORT:-8443}:8443"
-      - "${AIONUI_PORT:-3000}:3000"
+      - "${OPENCODE_PORT:-3000}:3000"
 
     # ── Environment ──
     environment:
-      # code-server password (change this!)
+      # code-server
       CODE_SERVER_PASSWORD: "${CODE_SERVER_PASSWORD:-devpass}"
 
-      # AionUI Web
-      AIONUI_ENABLED: "${AIONUI_ENABLED:-true}"
-      AIONUI_PORT: 3000
-      AIONUI_PASSWORD: "${AIONUI_PASSWORD:-}"
+      # opencode web server
+      OPENCODE_PORT: "${OPENCODE_PORT:-3000}"
+      OPENCODE_PASSWORD: "${OPENCODE_PASSWORD:-}"
 
       # Home directory inside the container (must match /home/dev in entrypoint)
       DEV_HOME: /home/dev
 
       # Pre-install mise-managed tools on first run
-      MISE_DEFAULT_TOOLS: "${MISE_DEFAULT_TOOLS:-nodejs@22}"
+      MISE_DEFAULT_TOOLS: "${MISE_DEFAULT_TOOLS:-nodejs@latest python@latest rust@latest go@latest}"
 
       # UID/GID fallback
       DEV_UID: "${DEV_UID:-1000}"
       DEV_GID: "${DEV_GID:-1000}"
 
-    # ── Default: code-server + AionUI ──
+    # ── Default: code-server ──
     command: ["code-server", "--disable-telemetry"]
 
     # ── Health check ──

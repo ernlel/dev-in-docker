@@ -87,6 +87,7 @@ if [ -n "${MISE_DEFAULT_TOOLS:-}" ]; then
     sudo -u "$RUN_USER" "$MISE_BIN" install
 fi
 
+# ── Nix profile ──
 if [ -f /etc/profile.d/nix.sh ]; then
     echo ">>> Setting up Nix …"
     . /etc/profile.d/nix.sh
@@ -94,11 +95,11 @@ if [ -f /etc/profile.d/nix.sh ]; then
 fi
 
 # Persist PATH for `docker compose exec` shells
-NIX_PATH="/nix/var/nix/profiles/default/bin"
+NIX_BIN="/nix/var/nix/profiles/default/bin"
 cat > /etc/profile.d/mise.sh <<-PROFILE
 export MISE_DATA_DIR="$MISE_DATA"
 export MISE_CONFIG_DIR="$MISE_CONFIG"
-export PATH="\$PATH:${DEV_HOME}/.local/share/mise/shims:${DEV_HOME}/.local/bin:${NIX_PATH}"
+export PATH="\$PATH:${DEV_HOME}/.local/share/mise/shims:${DEV_HOME}/.local/bin:${DEV_HOME}/.nix-profile/bin:${NIX_BIN}"
 PROFILE
 
 # Ensure nix/mise PATH in interactive non-login shells (docker compose exec)
@@ -111,6 +112,7 @@ if ! grep -q "profile.d/mise" "${DEV_HOME}/.bashrc" 2>/dev/null; then
     echo "source /etc/profile.d/mise.sh" >> "${DEV_HOME}/.bashrc"
 fi
 
+# ── code-server config ──
 CODE_SERVER_CONFIG="${DEV_HOME}/.config/code-server/config.yaml"
 if [ ! -f "$CODE_SERVER_CONFIG" ]; then
     sudo -u "$RUN_USER" mkdir -p "$(dirname "$CODE_SERVER_CONFIG")"
@@ -126,66 +128,26 @@ fi
 mkdir -p "${DEV_HOME}/.local/share/code-server/User"
 chown -R "$HOST_UID:$HOST_GID" "${DEV_HOME}/.local" 2>/dev/null || true
 
-start_aionui() {
-    local aionui_dir="/app/aionui"
-    if [ ! -d "$aionui_dir/out/renderer" ]; then
-        echo ">>> AionUI renderer not built, skipping"
-        return
-    fi
-    local aionui_port="${AIONUI_PORT:-3000}"
-    local aionui_log="/tmp/aionui-$$.log"
-    echo ">>> Starting AionUI Web on port $aionui_port …"
+# ── opencode web server ──
+start_opencode() {
+    local opencode_port="${OPENCODE_PORT:-3000}"
+    local opencode_log="/tmp/opencode.log"
+    echo ">>> Starting opencode web on port $opencode_port …"
     sudo -u "$RUN_USER" env \
-        AIONUI_PORT="$aionui_port" \
-        AIONUI_HOST="0.0.0.0" \
-        AIONUI_ALLOW_REMOTE=true \
-        AIONUI_DATA_DIR="${DEV_HOME}/.aionui-web" \
-        bun "$aionui_dir/scripts/webui.ts" --remote --no-build > "$aionui_log" 2>&1 &
-    local aionui_pid=$!
-    echo ">>> AionUI Web PID: $aionui_pid"
-    for i in $(seq 1 15); do
-        sleep 1
-        if grep -q "Initial admin password\|Login username" "$aionui_log" 2>/dev/null; then
-            break
-        fi
-        if ! kill -0 $aionui_pid 2>/dev/null; then
-            echo ">>> AionUI Web failed to start:"
-            head -10 "$aionui_log"
-            return
-        fi
-    done
-    grep -E "Initial admin|Login username|password:" "$aionui_log" 2>/dev/null | while read -r line; do
-        echo ">>> AionUI: $line"
-    done
-
-    if [ -n "${AIONUI_PASSWORD:-}" ]; then
-        echo ">>> AionUI: applying AIONUI_PASSWORD via change-password API …"
-        for i in $(seq 1 6); do
-            local status
-            status=$(sudo -u "$RUN_USER" curl -s -o /dev/null -w "%{http_code}" \
-                -X POST "http://127.0.0.1:$aionui_port/api/webui/change-password" \
-                -H "Content-Type: application/json" \
-                -d "{\"new_password\":\"$AIONUI_PASSWORD\"}" 2>/dev/null || echo "000")
-            if [ "$status" = "200" ]; then
-                echo ">>> AionUI: password set from AIONUI_PASSWORD env var"
-                break
-            fi
-            sleep 2
-        done
+        OPENCODE_SERVER_PASSWORD="${OPENCODE_PASSWORD:-}" \
+        opencode web --hostname 0.0.0.0 --port "$opencode_port" > "$opencode_log" 2>&1 &
+    local pid=$!
+    echo ">>> opencode PID: $pid"
+    sleep 2
+    if ! kill -0 $pid 2>/dev/null; then
+        echo ">>> opencode failed to start:"
+        head -20 "$opencode_log" 2>/dev/null
+    else
+        head -5 "$opencode_log" 2>/dev/null
     fi
 }
 
-LAUNCH_AIONUI=false
-if [ "$1" = "code-server" ] && [ "${AIONUI_ENABLED:-true}" = "true" ]; then
-    LAUNCH_AIONUI=true
-fi
-if [ "${AIONUI_ENABLED:-false}" = "true" ] && [ "$1" != "code-server" ]; then
-    LAUNCH_AIONUI=true
-fi
-
-if [ "$LAUNCH_AIONUI" = true ]; then
-    start_aionui
-fi
+start_opencode
 
 export HOME="$DEV_HOME"
 exec su-exec "$RUN_USER" "$@"
