@@ -1,11 +1,11 @@
-# Dev Environment — code-server + AionUI Web + mise
+# Dev Environment — code-server + opencode + mise
 
 ## Quick start
 
 ```bash
 # 1. Copy and edit environment
 cp .env.example .env
-#    Edit .env: set HOME_MOUNT, CODE_SERVER_PASSWORD, AIONUI_PASSWORD, etc.
+#    Edit .env: set HOME_MOUNT, CODE_SERVER_PASSWORD, OPENCODE_PASSWORD, etc.
 
 # 2. First build (takes 5-15 min)
 docker compose build --no-cache
@@ -19,42 +19,17 @@ docker compose logs -f
 
 | Service | URL | Credentials |
 |---------|-----|-------------|
-| code-server | http://localhost:8443 | password: set in .env|
-| AionUI Web | http://localhost:3000 | username: admin, password set in .env|
+| code-server | http://localhost:8443 | password: set in .env |
+| opencode web | http://localhost:3000 | password: set in .env |
 
 ## What's inside
 
 - **code-server** — VS Code in the browser
-- **AionUI Web** — AI agent cowork platform (starts alongside code-server)
+- **opencode** — open source AI coding agent with web UI (starts automatically on boot)
+- **Nix** — functional package manager for additional CLI tools
 - **mise** — polyglot tool version manager (Node.js, Rust, Go, Python, …)
 - **Docker CLI** — talks to the host Docker socket (no Docker-in-Docker)
 - Your **home/project directory** mounted — dotfiles, SSH keys, code, mise data all persist
-
-## AionUI admin password
-
-AionUI generates a random password on first launch. Find it in the logs:
-
-```bash
-docker compose logs dev | grep "AionUI:"
-```
-
-Expected output:
-```
->>> AionUI: Initial admin password: R3pL8x...
->>> AionUI: Login username: admin
-```
-
-To set a **specific** password, set `AIONUI_PASSWORD` in `.env` before starting:
-
-```env
-AIONUI_PASSWORD=my-secure-pass
-```
-
-If you forget the password, generate a new random one:
-
-```bash
-docker compose exec dev bun /app/aionui/scripts/resetpass.ts
-```
 
 ## Data persistence
 
@@ -67,6 +42,8 @@ HOME_MOUNT=/mnt/Data/Dev   # Host path to mount (default: ~)
 ```
 
 > **Note**: The directory must be writable by your user on the host. If you see EACCES errors, check `ls -ld $HOME_MOUNT` — it should be owned by you, not root.
+
+The Nix store is persisted at `$HOME_MOUNT/.nix` on the host, so installed packages survive container rebuilds.
 
 To mount additional host paths (e.g. another project directory), create [`docker-compose.override.yml`](docker-compose.override.yml) (Docker Compose loads it automatically):
 
@@ -84,16 +61,15 @@ services:
 
 ## Updating components
 
-All build-time versions are in [`.env`](.env):
+All build-time versions default to `latest`. Set specific versions in `.env` to pin:
 
 ```env
-NODE_VERSION=24          # Node.js version for the AionUI builder
-AIONUI_TAG=v2.1.18       # AionUI release tag
-AIONCORE_VERSION=v0.1.30 # AionCore backend binary
+NIX_VERSION=2.34.7           # Nix package manager
 CODE_SERVER_VERSION=4.123.0  # code-server release
+OPENCODE_VERSION=latest      # opencode AI agent
 ```
 
-Change any value, then rebuild:
+Rebuild to update:
 
 ```bash
 docker compose build --no-cache && docker compose up -d
@@ -102,7 +78,13 @@ docker compose build --no-cache && docker compose up -d
 Override without editing `.env`:
 
 ```bash
-AIONUI_TAG=v2.2.0 AIONCORE_VERSION=v0.1.31 docker compose build --no-cache
+CODE_SERVER_VERSION=4.123.0 docker compose build --no-cache
+```
+
+mise tools also default to latest:
+
+```env
+MISE_DEFAULT_TOOLS=nodejs@latest python@latest rust@latest go@latest
 ```
 
 ## Common commands
@@ -120,7 +102,7 @@ docker compose logs dev -f --tail=50
 docker compose build --no-cache && docker compose up -d
 
 # Open a shell inside the container
-docker compose exec dev bash
+docker compose exec -u dev dev bash
 
 # Change code-server password
 docker compose exec dev sed -i "s/password:.*/password: newpass/" ~/.config/code-server/config.yaml
@@ -133,24 +115,22 @@ docker compose restart dev
 ┌───────────────────────────────────────────────────────┐
 │  Container dev                                         │
 │                                                         │
-│  ┌──────────────┐   ┌─────────────────────────────┐   │
-│  │ code-server  │   │ AionUI Web                  │   │
-│  │ :8443        │   │                             │   │
-│  │              │   │  ┌──────────────────────┐   │   │
-│  │              │   │  │ webui.ts (Bun) :3000 │   │   │
-│  │              │   │  └─────────┬────────────┘   │   │
-│  └──────────────┘   │            │                 │   │
-│                      │  ┌────────┴────────────┐   │   │
-│  ┌────────────────┐  │  │ aioncore (Rust)     │   │   │
-│  │ docker (CLI)   │  │  │ SQLite / MCP / ACP  │   │   │
-│  │ ↓/var/run/     │  │  └─────────────────────┘   │   │
-│  │   docker.sock  │  │                             │   │
-│  └────────────────┘  │  ┌──────────────────────┐   │   │
-│                       │  │ mise (Node, Rust,    │   │   │
-│                       │  │ Go, Python, …)       │   │   │
-│                       │  └──────────────────────┘   │   │
+│  ┌──────────────┐   ┌──────────────────────┐          │
+│  │ code-server  │   │ opencode web          │          │
+│  │ :8443        │   │ :3000                 │          │
+│  └──────────────┘   └──────────────────────┘          │
+│                                                         │
+│  ┌────────────────┐  ┌──────────────────────┐          │
+│  │ docker (CLI)   │  │ mise (Node, Rust,    │          │
+│  │ ↓/var/run/     │  │ Go, Python, …)       │          │
+│  │   docker.sock  │  └──────────────────────┘          │
+│  └────────────────┘  ┌──────────────────────┐          │
+│                       │ Nix (/nix)           │          │
+│                       │ persisted via bind   │          │
+│                       └──────────────────────┘          │
 │                                                         │
 │  Mounts: <HOME_MOUNT> → /home/dev  (persistent)          │
+│          <HOME_MOUNT>/.nix → /nix  (persistent)          │
 │          /var/run/docker.sock                           │
 └───────────────────────────────────────────────────────┘
 ```
@@ -158,9 +138,9 @@ docker compose restart dev
 ## File layout
 
 ```
-├── Dockerfile         # Multi-stage: builds AionUI + dev tools + Nix
+├── Dockerfile         # Single-stage: dev tools + Nix + opencode
 ├── docker-compose.yml # Service definition + build args
-├── entrypoint.sh      # UID matching, mise, Nix, code-server + AionUI launch
+├── entrypoint.sh      # UID matching, mise, Nix, code-server + opencode launch
 ├── post-install.sh    # Run inside container to install CLI agents
 ├── .env               # All configurable versions and settings
 └── README.md
@@ -176,19 +156,13 @@ The entrypoint reads the UID/GID from your mounted directory and creates a `dev`
 
 Config is at `~/.config/code-server/config.yaml` (persisted on host). The entrypoint pre-creates it with the password from `CODE_SERVER_PASSWORD` env var (default: `devpass`). The user data directory at `~/.local/share/code-server/` is also created on startup.
 
-### AionUI Web
+### opencode
 
-AionUI consists of two repos:
-- **AionUi** (TypeScript) — cloned from `AIONUI_REPO` at tag `AIONUI_TAG` and built at Docker build time
-- **AionCore** (Rust) — downloaded as a prebuilt binary from GitHub releases at version `AIONCORE_VERSION`
+Installed at build time via the official install script. The web server starts automatically on container boot at `0.0.0.0:3000`. Set `OPENCODE_PASSWORD` in `.env` to require authentication.
 
-Both run in the same container. Data persists at `~/.aionui-web/` on the host.
+### Nix
 
-AionUI-compatible CLI agents: `claude`, `codex`, `copilot`, `opencode`, `goose`, `gemini`, `qwen`, `augment`, `codebuddy`, `kimi`, `factory`, `qoder`, `mistral`, `snow`, `hermes`, `cursor`, `kiro`, `openclaw`, `nanobot`, `iflow`.
-
-#### Nix
-
-Installed at build time via the single-user (no-daemon) installer at `/nix`. The Nix store (`/nix`) is persisted across container rebuilds via a named Docker volume (`nix-store`). Use `nix profile install nixpkgs#<pkg>` to install packages, or `nix-env -iA nixpkgs.<pkg>` for ad-hoc use. Default PATH includes `/nix/var/nix/profiles/default/bin`.
+Installed at build time. The Nix store (`/nix`) is persisted via a bind mount at `$HOME_MOUNT/.nix`. On first start, the entrypoint restores the store from an image backup. Use `nix profile add nixpkgs#<pkg>` to install packages.
 
 ### Docker access
 
@@ -200,13 +174,10 @@ Installed at build time. Tools defined in `MISE_DEFAULT_TOOLS` are installed aut
 
 ### Post-install script
 
-Run [`post-install.sh`](post-install.sh) inside the container to install any CLI tools (agents, editors, utilities, …):
+Run [`post-install.sh`](post-install.sh) inside the container to install additional CLI tools (agents, editors, utilities, …):
 
 ```bash
 docker compose exec -u dev dev bash
-```
-Inside container run:
-```bash
 bash /app/post-install.sh
 ```
 

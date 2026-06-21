@@ -1,49 +1,21 @@
 # ======================================================================
 #  Version overrides — pass via --build-arg or docker-compose build.args
+#  Defaults to "latest" — set specific versions in .env to pin.
 # ======================================================================
-ARG NODE_VERSION=20
-ARG NIX_VERSION=2.34.7
-ARG AIONUI_REPO=https://github.com/iOfficeAI/AionUi.git
-ARG AIONUI_TAG=v2.1.9
-ARG AIONCORE_VERSION=v0.1.29
-ARG CODE_SERVER_VERSION=4.96.4
+ARG NIX_VERSION=latest
+ARG CODE_SERVER_VERSION=latest
+ARG OPENCODE_VERSION=latest
 
 # ======================================================================
-# Stage 1 — Build AionUI web renderer
-# ======================================================================
-FROM node:${NODE_VERSION}-slim AS aionui-builder
-
-ARG AIONUI_REPO
-ARG AIONUI_TAG
-ARG AIONCORE_VERSION
-
-WORKDIR /app
-
-RUN apt-get update && apt-get upgrade -y && apt-get install -y --no-install-recommends \
-    git ca-certificates curl bzip2 \
-    && rm -rf /var/lib/apt/lists/*
-
-RUN git clone --depth 1 --branch "$AIONUI_TAG" "$AIONUI_REPO" .
-
-RUN npm install -g bun \
-    && bun install --ignore-scripts \
-    && bun install
-
-RUN bun run package
-
-RUN curl -fsSL -o /tmp/aioncore.tar.gz \
-    "https://github.com/iOfficeAI/AionCore/releases/download/${AIONCORE_VERSION}/aioncore-${AIONCORE_VERSION}-x86_64-unknown-linux-gnu.tar.gz" \
-    && mkdir -p resources/bundled-aioncore/linux-x64 \
-    && tar -xzf /tmp/aioncore.tar.gz -C resources/bundled-aioncore/linux-x64/ \
-    && chmod +x resources/bundled-aioncore/linux-x64/aioncore
-
-# ======================================================================
-# Stage 2 — Dev environment base
+# Stage 1 — Dev environment
 # ======================================================================
 FROM debian:bookworm-slim AS dev-env
 
+ARG NIX_VERSION
 ARG CODE_SERVER_VERSION
+ARG OPENCODE_VERSION
 
+# ── System packages ──
 RUN apt-get update && apt-get upgrade -y && apt-get install -y --no-install-recommends \
     bzip2 \
     ca-certificates \
@@ -74,42 +46,19 @@ RUN install -m 0755 -d /etc/apt/keyrings \
     && apt-get install -y --no-install-recommends docker-ce-cli \
     && rm -rf /var/lib/apt/lists/*
 
-# ── Bun runtime (for AionUI) — install globally, not under /root/
-RUN curl -fsSL https://bun.sh/install | bash \
-    && cp /root/.bun/bin/bun /usr/local/bin/bun \
-    && chmod 755 /usr/local/bin/bun
-
 # ── code-server ──
-RUN curl -fsSL https://code-server.dev/install.sh | sh -s -- --version "$CODE_SERVER_VERSION" \
+RUN if [ "$CODE_SERVER_VERSION" = "latest" ]; then \
+        curl -fsSL https://code-server.dev/install.sh | sh; \
+    else \
+        curl -fsSL https://code-server.dev/install.sh | sh -s -- --version "$CODE_SERVER_VERSION"; \
+    fi \
     && ln -s /usr/lib/code-server/bin/code-server /usr/local/bin/code-server
 
 # ── mise (polyglot tool version manager) ──
 RUN curl -fsSL https://mise.run | MISE_INSTALL_PATH=/usr/local/bin/mise sh
 
-# ── AionUI web artifacts from builder ──
-WORKDIR /app/aionui
-COPY --from=aionui-builder /app/out          /app/aionui/out
-COPY --from=aionui-builder /app/scripts      /app/aionui/scripts
-COPY --from=aionui-builder /app/packages     /app/aionui/packages
-COPY --from=aionui-builder /app/package.json /app/aionui/
-COPY --from=aionui-builder /app/bun.lock     /app/aionui/
-COPY --from=aionui-builder /app/patches      /app/aionui/patches
-COPY --from=aionui-builder /app/resources    /app/aionui/resources
-COPY --from=aionui-builder /app/node_modules /app/aionui/node_modules
-
-# ── AionUI node modules + bun from builder ──
-COPY --from=aionui-builder /usr/local/bin/bun /usr/local/bin/bun
-COPY --from=aionui-builder /usr/local/lib/node_modules /usr/local/lib/node_modules
-
-ARG NIX_VERSION=2.34.7
-
-# ── Nix package manager (multi-user, no daemon) — store at /nix ──
-# Adapted from the official nixos/nix Dockerfile approach.
-# The nixbld users + sandbox=false are required for Nix inside containers.
-RUN curl -fsSL https://releases.nixos.org/nix/nix-${NIX_VERSION}/nix-${NIX_VERSION}-$(uname -m)-linux.tar.xz \
-       -o /tmp/nix.tar.xz \
-    && tar xf /tmp/nix.tar.xz \
-    && groupadd -r nixbld \
+# ── Nix package manager — store at /nix, persisted via bind mount ──
+RUN groupadd -r nixbld \
     && for i in $(seq 1 30); do \
          useradd -r -M -d /var/empty -s /sbin/nologin -G nixbld -u $((30000 + i)) nixbld$i; \
        done \
@@ -117,13 +66,29 @@ RUN curl -fsSL https://releases.nixos.org/nix/nix-${NIX_VERSION}/nix-${NIX_VERSI
     && echo 'sandbox = false' > /etc/nix/nix.conf \
     && echo 'experimental-features = nix-command flakes' >> /etc/nix/nix.conf \
     && mkdir -m 0755 /nix \
-    && USER=root sh nix-${NIX_VERSION}-$(uname -m)-linux/install \
+    && if [ "$NIX_VERSION" = "latest" ]; then \
+         curl -fsSL https://nixos.org/nix/install -o /tmp/nix-install.sh \
+         && USER=root bash /tmp/nix-install.sh --no-daemon --no-modify-profile \
+         && rm /tmp/nix-install.sh; \
+       else \
+         curl -fsSL https://releases.nixos.org/nix/nix-${NIX_VERSION}/nix-${NIX_VERSION}-$(uname -m)-linux.tar.xz -o /tmp/nix.tar.xz \
+         && tar xf /tmp/nix.tar.xz \
+         && USER=root sh nix-${NIX_VERSION}-$(uname -m)-linux/install --no-modify-profile \
+         && rm -rf /tmp/nix.tar.xz nix-${NIX_VERSION}-$(uname -m)-linux; \
+       fi \
     && ln -s /nix/var/nix/profiles/default/etc/profile.d/nix.sh /etc/profile.d/nix.sh \
-    && rm -rf /tmp/nix.tar.xz nix-${NIX_VERSION}-$(uname -m)-linux \
     && /nix/var/nix/profiles/default/bin/nix-collect-garbage --delete-old \
     && /nix/var/nix/profiles/default/bin/nix-store --optimise \
     && /nix/var/nix/profiles/default/bin/nix-store --verify --check-contents \
     && cp -a /nix /opt/nix-backup
+
+# ── opencode (AI coding agent) ──
+RUN if [ "$OPENCODE_VERSION" = "latest" ]; then \
+        curl -fsSL https://opencode.ai/install | bash; \
+    else \
+        curl -fsSL https://opencode.ai/install | bash -s -- --version "$OPENCODE_VERSION"; \
+    fi \
+    && cp /root/.opencode/bin/opencode /usr/local/bin/opencode
 
 # ── Entrypoint ──
 COPY entrypoint.sh /usr/local/bin/entrypoint.sh
